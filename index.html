@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Investment Fortress | Hybrid Strategy Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root { --primary: #1e293b; --accent: #f59e0b; --success: #10b981; --bg: #f1f5f9; }
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: var(--bg); color: var(--primary); padding: 20px; margin: 0; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1 { margin: 0 0 5px 0; font-size: 1.6rem; }
+        .sub { color: #64748b; margin-bottom: 20px; font-size: 0.9rem; border-left: 4px solid var(--accent); padding-left: 10px; }
+
+        /* Original Params Grid */
+        .params-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 20px;
+        }
+        .param-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.75rem; font-weight: 700; color: #475569; }
+        input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 12px; font-weight: 600; }
+        input:focus { border-color: var(--accent); outline: none; background: #fffbeb; }
+
+        /* Stats Row */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: var(--primary); color: white; padding: 20px; border-radius: 18px; text-align: center; }
+        .stat-box span { display: block; font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-box strong { font-size: 1.3rem; }
+
+        /* Charts & Tables */
+        .results-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; }
+        th { background: #f8fafc; padding: 12px; font-size: 0.8rem; text-align: center; border-bottom: 2px solid #edf2f7; }
+        td { padding: 15px; text-align: center; border-bottom: 1px solid #edf2f7; font-weight: 600; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-run { background: var(--accent); color: white; }
+        .btn-csv { background: var(--primary); color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .chart-box { background: white; padding: 15px; border-radius: 20px; height: 350px; }
+
+        @media (max-width: 900px) { .results-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1>📈 Fortress Strategy Simulator v3.0</h1>
+        <div class="sub">Hybrid Logic: Daily Boosts + Self-Sustaining Bucket + ISA Top-ups</div>
+        
+        <div class="params-grid">
+            <div class="param-group"><label>Starting Capital (£)</label><input type="number" id="startCap" value="40000"></div>
+            <div class="param-group"><label>Daily Contribution (£)</label><input type="number" id="dailyBase" value="100"></div>
+            <div class="param-group"><label>Monthly Profit (%)</label><input type="number" id="monthlyRate" value="3.14" step="0.01"></div>
+            <div class="param-group"><label>Extra Monthly (£)</label><input type="number" id="extraMonthly" value="1600"></div>
+            <div class="param-group"><label>Extra Duration (Yrs)</label><input type="number" id="extraYears" value="5"></div>
+            <div class="param-group"><label>Boost Threshold (£/mo)</label><input type="number" id="threshold" value="4000"></div>
+            <div class="param-group"><label>New Daily Boost (£)</label><input type="number" id="dailyBoost" value="150"></div>
+            <div class="param-group"><label>Annual Reinvest (%)</label><input type="number" id="reinvestPct" value="50"></div>
+            
+            <div class="param-group"><label>Annual ISA Top-up (£)</label><input type="number" id="isaTopUp" value="5000"></div>
+            <div class="param-group"><label>Annual Inflation (%)</label><input type="number" id="inflation" value="2.5" step="0.1"></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-run" onclick="simulate()">▶ Update Simulation</button>
+            <button class="btn-csv" onclick="downloadCSV()">💾 Export CSV</button>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-box"><span>Final Nominal Balance</span><strong id="statFinal">£0</strong></div>
+        <div class="stat-box" style="background: var(--accent);"><span>Freedom Point (Yr)</span><strong id="statFreedom">--</strong></div>
+        <div class="stat-box" style="background: var(--success);"><span>Total Personal Outlay</span><strong id="statOutlay">£0</strong></div>
+    </div>
+
+    <div class="card">
+        <h3>🎯 Milestone Tracker</h3>
+        <table>
+            <thead><tr><th>Target</th><th>100k</th><th>250k</th><th>500k</th><th>1M</th><th>2.5M</th></tr></thead>
+            <tbody id="milestoneBody"></tbody>
+        </table>
+    </div>
+
+    <div class="results-grid">
+        <div class="chart-box"><canvas id="mainChart"></canvas></div>
+        <div class="chart-box"><canvas id="pieChart"></canvas></div>
+    </div>
+</div>
+
+<script>
+    let mainChart, pieChart, history = [];
+
+    function simulate() {
+        // Gather all inputs
+        const p = {
+            cap: parseFloat(document.getElementById('startCap').value) || 0,
+            dailyBase: parseFloat(document.getElementById('dailyBase').value) || 0,
+            rate: (parseFloat(document.getElementById('monthlyRate').value) / 100) || 0,
+            extraMo: parseFloat(document.getElementById('extraMonthly').value) || 0,
+            extraYrs: parseFloat(document.getElementById('extraYears').value) || 0,
+            thresh: parseFloat(document.getElementById('threshold').value) || 0,
+            boost: parseFloat(document.getElementById('dailyBoost').value) || 0,
+            reinvest: (parseFloat(document.getElementById('reinvestPct').value) / 100) || 0,
+            isaTop: parseFloat(document.getElementById('isaTopUp').value) || 0,
+            inf: (parseFloat(document.getElementById('inflation').value) / 100) || 0
+        };
+
+        const dailyRate = Math.pow(1 + p.rate, 1/30.44) - 1;
+        const dailyInf = Math.pow(1 + p.inf, 1/365.25) - 1;
+
+        let balance = p.cap;
+        let totalOutlay = p.cap;
+        let totalProfit = 0;
+        let yearlyProfitAcc = 0;
+        let monthlyProfitAcc = 0;
+        
+        let currentDaily = p.dailyBase;
+        let boostTriggered = false;
+        let freedomDay = null;
+
+        const milestones = [100000, 250000, 500000, 1000000, 2500000];
+        const mReached = new Array(milestones.length).fill(null);
+        
+        history = [];
+        let chartLabels = [], chartBal = [], chartReal = [];
+
+        // Run 30 Years
+        for (let d = 1; d <= 10950; d++) {
+            const dayProfit = balance * dailyRate;
+
+            // 1. ORIGINAL LOGIC: Monthly Profit Threshold Check
+            if (d % 30 === 0) {
+                if (!boostTriggered && monthlyProfitAcc > p.thresh) {
+                    currentDaily = p.boost;
+                    boostTriggered = true;
+                }
+                monthlyProfitAcc = 0; // Reset monthly counter
+            }
+
+            // 2. ADVANCED LOGIC: Self-Sustaining Bucket
+            // If daily profit covers our investment goal, stop taking from pocket
+            if (dayProfit >= currentDaily) {
+                if (!freedomDay) freedomDay = d;
+                // Bucket is self-filling: balance stays same, outlay doesn't increase
+            } else {
+                balance += currentDaily;
+                totalOutlay += currentDaily;
+            }
+
+            // 3. ORIGINAL LOGIC: Extra Monthly Contributions
+            if (d % 30 === 0 && d <= (p.extraYrs * 365)) {
+                balance += p.extraMo;
+                totalOutlay += p.extraMo;
+            }
+
+            // 4. NEW LOGIC: Annual ISA Top-up (April)
+            if (d % 365 === 95) {
+                balance += p.isaTop;
+                totalOutlay += p.isaTop;
+            }
+
+            // 5. Compounding
+            balance += dayProfit;
+            totalProfit += dayProfit;
+            yearlyProfitAcc += dayProfit;
+            monthlyProfitAcc += dayProfit;
+
+            // 6. ORIGINAL LOGIC: Annual Profit Reinvestment
+            if (d % 365 === 0) {
+                balance += (yearlyProfitAcc * p.reinvest);
+                yearlyProfitAcc = 0; 
+            }
+
+            // Milestone Check
+            milestones.forEach((m, i) => {
+                if (mReached[i] === null && balance >= m) mReached[i] = (d/365.25).toFixed(1);
+            });
+
+            // Snapshots
+            if (d % 30 === 0) {
+                const real = balance / Math.pow(1 + dailyInf, d);
+                chartLabels.push(`Yr ${Math.floor(d/365.25)}`);
+                chartBal.push(balance.toFixed(0));
+                chartReal.push(real.toFixed(0));
+                history.push({ day: d, balance, real, outlay: totalOutlay });
+            }
+        }
+
+        render(balance, totalOutlay, totalProfit, freedomDay, mReached, chartLabels, chartBal, chartReal);
+    }
+
+    function render(final, outlay, profit, freedom, milestones, labels, bData, rData) {
+        document.getElementById('statFinal').innerText = `£${Math.round(final).toLocaleString()}`;
+        document.getElementById('statOutlay').innerText = `£${Math.round(outlay).toLocaleString()}`;
+        document.getElementById('statFreedom').innerText = freedom ? `${(freedom/365.25).toFixed(1)} Yrs` : "---";
+
+        const mBody = document.getElementById('milestoneBody');
+mBody.innerHTML = `<tr><td><strong>Time to Reach</strong></td>${milestones.map(m => `<td>${m ? m + ' yrs' : '>30y'}</td>`).join('')}</tr>`;
+
+        if (mainChart) mainChart.destroy();
+        mainChart = new Chart(document.getElementById('mainChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Nominal Balance', data: bData, borderColor: '#1e293b', fill: false, tension: 0.2, pointRadius: 0 },
+                    { label: 'Inflation Adjusted', data: rData, borderColor: '#f59e0b', borderDash: [5,5], pointRadius: 0 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        if (pieChart) pieChart.destroy();
+        pieChart = new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Outlay', 'Net Profit'],
+                datasets: [{ data: [outlay, profit], backgroundColor: ['#3b82f6', '#10b981'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function downloadCSV() {
+        let csv = "Day,Balance,InflationAdjusted,TotalOutlay\n";
+        history.forEach(r => csv += `${r.day},${r.balance.toFixed(2)},${r.real.toFixed(2)},${r.outlay.toFixed(2)}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'Fortress_Data.csv'; a.click();
+    }
+
+    simulate(); // Auto-run on load
+</script>
+</body>
+</html>
