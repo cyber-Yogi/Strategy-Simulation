@@ -15,7 +15,6 @@
         h1 { margin: 0 0 5px 0; font-size: 1.6rem; }
         .sub { color: #64748b; margin-bottom: 20px; font-size: 0.9rem; border-left: 4px solid var(--accent); padding-left: 10px; }
 
-        /* Original Params Grid */
         .params-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
@@ -27,13 +26,11 @@
         input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 12px; font-weight: 600; }
         input:focus { border-color: var(--accent); outline: none; background: #fffbeb; }
 
-        /* Stats Row */
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-box { background: var(--primary); color: white; padding: 20px; border-radius: 18px; text-align: center; }
         .stat-box span { display: block; font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; margin-bottom: 5px; }
         .stat-box strong { font-size: 1.3rem; }
 
-        /* Charts & Tables */
         .results-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; }
         th { background: #f8fafc; padding: 12px; font-size: 0.8rem; text-align: center; border-bottom: 2px solid #edf2f7; }
@@ -54,7 +51,7 @@
 
 <div class="container">
     <div class="card">
-        <h1>📈 Fortress Strategy Simulator v3.0</h1>
+        <h1>📈 Fortress Strategy Simulator v4.0</h1>
         <div class="sub">Hybrid Logic: Daily Boosts + Self-Sustaining Bucket + ISA Top-ups</div>
         
         <div class="params-grid">
@@ -66,7 +63,6 @@
             <div class="param-group"><label>Boost Threshold (£/mo)</label><input type="number" id="threshold" value="4000"></div>
             <div class="param-group"><label>New Daily Boost (£)</label><input type="number" id="dailyBoost" value="150"></div>
             <div class="param-group"><label>Annual Reinvest (%)</label><input type="number" id="reinvestPct" value="50"></div>
-            
             <div class="param-group"><label>Annual ISA Top-up (£)</label><input type="number" id="isaTopUp" value="5000"></div>
             <div class="param-group"><label>Annual Inflation (%)</label><input type="number" id="inflation" value="2.5" step="0.1"></div>
         </div>
@@ -101,7 +97,6 @@
     let mainChart, pieChart, history = [];
 
     function simulate() {
-        // Gather all inputs
         const p = {
             cap: parseFloat(document.getElementById('startCap').value) || 0,
             dailyBase: parseFloat(document.getElementById('dailyBase').value) || 0,
@@ -115,8 +110,8 @@
             inf: (parseFloat(document.getElementById('inflation').value) / 100) || 0
         };
 
-        const dailyRate = Math.pow(1 + p.rate, 1/30.44) - 1;
-        const dailyInf = Math.pow(1 + p.inf, 1/365.25) - 1;
+        const dailyRate = Math.pow(1 + p.rate, 1 / 30.44) - 1;
+        const dailyInf = Math.pow(1 + p.inf, 1 / 365.25) - 1;
 
         let balance = p.cap;
         let totalOutlay = p.cap;
@@ -134,62 +129,65 @@
         history = [];
         let chartLabels = [], chartBal = [], chartReal = [];
 
-        // Run 30 Years
+        // Run 30 Years (10,950 Days)
         for (let d = 1; d <= 10950; d++) {
+            // 1. Calculate base daily yield from the current balance
             const dayProfit = balance * dailyRate;
 
-            // 1. ORIGINAL LOGIC: Monthly Profit Threshold Check
-            if (d % 30 === 0) {
-                if (!boostTriggered && monthlyProfitAcc > p.thresh) {
-                    currentDaily = p.boost;
-                    boostTriggered = true;
-                }
-                monthlyProfitAcc = 0; // Reset monthly counter
+            // 2. Check Monthly Profit Threshold Trigger
+            if (d % 30 === 0 && !boostTriggered && monthlyProfitAcc > p.thresh) {
+                currentDaily = p.boost;
+                boostTriggered = true;
             }
 
-            // 2. ADVANCED LOGIC: Self-Sustaining Bucket
-            // If daily profit covers our investment goal, stop taking from pocket
-            if (dayProfit >= currentDaily) {
-                if (!freedomDay) freedomDay = d;
-                // Bucket is self-filling: balance stays same, outlay doesn't increase
-            } else {
-                balance += currentDaily;
-                totalOutlay += currentDaily;
-            }
+            // 3. Formulate total external target inputs required for today
+            let requiredInjection = currentDaily;
 
-            // 3. ORIGINAL LOGIC: Extra Monthly Contributions
             if (d % 30 === 0 && d <= (p.extraYrs * 365)) {
-                balance += p.extraMo;
-                totalOutlay += p.extraMo;
+                requiredInjection += p.extraMo;
             }
 
-            // 4. NEW LOGIC: Annual ISA Top-up (April)
             if (d % 365 === 95) {
-                balance += p.isaTop;
-                totalOutlay += p.isaTop;
+                requiredInjection += p.isaTop;
             }
 
-            // 5. Compounding
+            // 4. Self-Sustaining Bucket Check
+            if (dayProfit >= requiredInjection) {
+                if (!freedomDay) freedomDay = d;
+                // Sustained by profits entirely -> no added outlay, balance gets no extra out-of-pocket cash
+            } else {
+                // Out-of-pocket covers the deficit gap
+                let netDeficit = requiredInjection - dayProfit;
+                balance += netDeficit;
+                totalOutlay += netDeficit;
+            }
+
+            // 5. Apply Daily Yield Compounding
             balance += dayProfit;
             totalProfit += dayProfit;
             yearlyProfitAcc += dayProfit;
             monthlyProfitAcc += dayProfit;
 
-            // 6. ORIGINAL LOGIC: Annual Profit Reinvestment
+            // 6. Annual Profit Reinvestment Milestone Execution
             if (d % 365 === 0) {
                 balance += (yearlyProfitAcc * p.reinvest);
                 yearlyProfitAcc = 0; 
             }
 
-            // Milestone Check
+            // Reset monthly tracking bucket after the checks complete
+            if (d % 30 === 0) {
+                monthlyProfitAcc = 0;
+            }
+
+            // Milestone Checks
             milestones.forEach((m, i) => {
-                if (mReached[i] === null && balance >= m) mReached[i] = (d/365.25).toFixed(1);
+                if (mReached[i] === null && balance >= m) mReached[i] = (d / 365.25).toFixed(1);
             });
 
-            // Snapshots
+            // Data Capture Snapshots every month
             if (d % 30 === 0) {
                 const real = balance / Math.pow(1 + dailyInf, d);
-                chartLabels.push(`Yr ${Math.floor(d/365.25)}`);
+                chartLabels.push(`Yr ${Math.floor(d / 365.25)}`);
                 chartBal.push(balance.toFixed(0));
                 chartReal.push(real.toFixed(0));
                 history.push({ day: d, balance, real, outlay: totalOutlay });
@@ -202,10 +200,10 @@
     function render(final, outlay, profit, freedom, milestones, labels, bData, rData) {
         document.getElementById('statFinal').innerText = `£${Math.round(final).toLocaleString()}`;
         document.getElementById('statOutlay').innerText = `£${Math.round(outlay).toLocaleString()}`;
-        document.getElementById('statFreedom').innerText = freedom ? `${(freedom/365.25).toFixed(1)} Yrs` : "---";
+        document.getElementById('statFreedom').innerText = freedom ? `${(freedom / 365.25).toFixed(1)} Yrs` : "---";
 
         const mBody = document.getElementById('milestoneBody');
-mBody.innerHTML = `<tr><td><strong>Time to Reach</strong></td>${milestones.map(m => `<td>${m ? m + ' yrs' : '>30y'}</td>`).join('')}</tr>`;
+        mBody.innerHTML = `<tr><td><strong>Time to Reach</strong></td>${milestones.map(m => `<td>${m ? m + ' yrs' : '>30y'}</td>`).join('')}</tr>`;
 
         if (mainChart) mainChart.destroy();
         mainChart = new Chart(document.getElementById('mainChart'), {
@@ -240,7 +238,7 @@ mBody.innerHTML = `<tr><td><strong>Time to Reach</strong></td>${milestones.map(m
         a.href = url; a.download = 'Fortress_Data.csv'; a.click();
     }
 
-    simulate(); // Auto-run on load
+    simulate();
 </script>
 </body>
 </html>
