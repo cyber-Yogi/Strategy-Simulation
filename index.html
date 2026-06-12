@@ -3,242 +3,392 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Investment Fortress | Hybrid Strategy Simulator</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <title>Fortress Strategy Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #1e293b; --accent: #f59e0b; --success: #10b981; --bg: #f1f5f9; }
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--primary); padding: 20px; margin: 0; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h1 { margin: 0 0 5px 0; font-size: 1.6rem; }
-        .sub { color: #64748b; margin-bottom: 20px; font-size: 0.9rem; border-left: 4px solid var(--accent); padding-left: 10px; }
-
-        .params-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 15px; 
-            margin-bottom: 20px;
+        :root {
+            --primary: #2563eb;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --warning: #f59e0b;
         }
-        .param-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.75rem; font-weight: 700; color: #475569; }
-        input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 12px; font-weight: 600; }
-        input:focus { border-color: var(--accent); outline: none; background: #fffbeb; }
-
-        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-box { background: var(--primary); color: white; padding: 20px; border-radius: 18px; text-align: center; }
-        .stat-box span { display: block; font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; margin-bottom: 5px; }
-        .stat-box strong { font-size: 1.3rem; }
-
-        .results-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; }
-        th { background: #f8fafc; padding: 12px; font-size: 0.8rem; text-align: center; border-bottom: 2px solid #edf2f7; }
-        td { padding: 15px; text-align: center; border-bottom: 1px solid #edf2f7; font-weight: 600; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+        .header-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--text-main);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+        }
+        h2 { margin-top: 0; font-size: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.1rem; color: var(--primary); margin-top: 1.5rem; margin-bottom: 0.75rem; }
         
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-run { background: var(--accent); color: white; }
-        .btn-csv { background: var(--primary); color: white; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        .chart-box { background: white; padding: 15px; border-radius: 20px; height: 350px; }
-
-        @media (max-width: 900px) { .results-grid { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 1rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-muted); }
+        
+        input, select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        input:disabled, select:disabled {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+        
+        .milestones-group { display: flex; gap: 0.5rem; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--background); font-weight: 600; }
+        .text-success { color: var(--success); font-weight: 600; }
+        .text-warning { color: var(--warning); font-weight: 600; }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h1>📈 Fortress Strategy Simulator v4.0</h1>
-        <div class="sub">Hybrid Logic: Daily Boosts + Self-Sustaining Bucket + ISA Top-ups</div>
-        
-        <div class="params-grid">
-            <div class="param-group"><label>Starting Capital (£)</label><input type="number" id="startCap" value="40000"></div>
-            <div class="param-group"><label>Daily Contribution (£)</label><input type="number" id="dailyBase" value="100"></div>
-            <div class="param-group"><label>Monthly Profit (%)</label><input type="number" id="monthlyRate" value="3.14" step="0.01"></div>
-            <div class="param-group"><label>Extra Monthly (£)</label><input type="number" id="extraMonthly" value="1600"></div>
-            <div class="param-group"><label>Extra Duration (Yrs)</label><input type="number" id="extraYears" value="5"></div>
-            <div class="param-group"><label>Boost Threshold (£/mo)</label><input type="number" id="threshold" value="4000"></div>
-            <div class="param-group"><label>New Daily Boost (£)</label><input type="number" id="dailyBoost" value="150"></div>
-            <div class="param-group"><label>Annual Reinvest (%)</label><input type="number" id="reinvestPct" value="50"></div>
-            <div class="param-group"><label>Annual ISA Top-up (£)</label><input type="number" id="isaTopUp" value="5000"></div>
-            <div class="param-group"><label>Annual Inflation (%)</label><input type="number" id="inflation" value="2.5" step="0.1"></div>
+    <h1 class="header-title">Fortress Strategy Simulator v4.0</h1>
+
+    <div class="container">
+        <div class="card">
+            <h2>Parameters</h2>
+            
+            <h3>Base Setup</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Starting Capital (£)</label>
+                    <input type="number" id="startCapital" value="20000" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Injection Amount (£)</label>
+                    <input type="number" id="injectionAmount" value="50" oninput="calculate()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Injection Frequency</label>
+                <select id="frequency" onchange="calculate()">
+                    <option value="daily" selected>Daily (21 Trading Days)</option>
+                    <option value="weekly">Weekly (4.2 Weeks)</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+
+            <h3>Extra Top-Up (ISA)</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Top-Up Amount (£)</label>
+                    <input type="number" id="isaAmount" value="0" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Frequency</label>
+                    <select id="isaFreq" onchange="handleIsaChange()">
+                        <option value="yearly" selected>Yearly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Yearly Timing</label>
+                <select id="isaTiming" onchange="calculate()">
+                    <option value="start" selected>Start of Year (Month 1)</option>
+                    <option value="end">End of Year (Month 12)</option>
+                </select>
+            </div>
+
+            <h3>Market & Strategy</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Harvest Target (%)</label>
+                    <input type="number" id="harvestRate" value="3.14" step="0.01" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Annual Inflation (%)</label>
+                    <input type="number" id="inflation" value="2.5" step="0.1" oninput="calculate()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Profit Reinvested (%)</label>
+                    <input type="number" id="reinvestPercent" value="100" min="0" max="100" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Compound Timing</label>
+                    <select id="timing" onchange="calculate()">
+                        <option value="end" selected>End of Month</option>
+                        <option value="immediate">Immediate</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3>Milestones</h3>
+            <div class="form-group">
+                <label>Target Basis</label>
+                <select id="milestoneBasis" onchange="calculate()">
+                    <option value="nominal" selected>Nominal Balance (Raw Numbers)</option>
+                    <option value="real">Real Balance (Inflation Adjusted)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Milestone Targets (£)</label>
+                <div class="milestones-group">
+                    <input type="number" id="m1" value="250000" oninput="calculate()">
+                    <input type="number" id="m2" value="500000" oninput="calculate()">
+                    <input type="number" id="m3" value="1000000" oninput="calculate()">
+                </div>
+            </div>
         </div>
 
-        <div class="btn-group">
-            <button class="btn-run" onclick="simulate()">▶ Update Simulation</button>
-            <button class="btn-csv" onclick="downloadCSV()">💾 Export CSV</button>
+        <div class="card">
+            <h2>Growth Timeline</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Target Crossed</th>
+                            <th>Time to Reach</th>
+                            <th>Total Injected</th>
+                            <th>Reinvested Profit</th>
+                            <th>Withdrawn Cash</th>
+                            <th>Real Value (Adjusted)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
+            </div>
+
+            <h2>Capital Split (At Highest Achieved Milestone)</h2>
+            <div class="chart-container">
+                <canvas id="splitChart"></canvas>
+            </div>
         </div>
     </div>
 
-    <div class="stats-row">
-        <div class="stat-box"><span>Final Nominal Balance</span><strong id="statFinal">£0</strong></div>
-        <div class="stat-box" style="background: var(--accent);"><span>Freedom Point (Yr)</span><strong id="statFreedom">--</strong></div>
-        <div class="stat-box" style="background: var(--success);"><span>Total Personal Outlay</span><strong id="statOutlay">£0</strong></div>
-    </div>
+    <script>
+        let myChart = null;
 
-    <div class="card">
-        <h3>🎯 Milestone Tracker</h3>
-        <table>
-            <thead><tr><th>Target</th><th>100k</th><th>250k</th><th>500k</th><th>1M</th><th>2.5M</th></tr></thead>
-            <tbody id="milestoneBody"></tbody>
-        </table>
-    </div>
-
-    <div class="results-grid">
-        <div class="chart-box"><canvas id="mainChart"></canvas></div>
-        <div class="chart-box"><canvas id="pieChart"></canvas></div>
-    </div>
-</div>
-
-<script>
-    let mainChart, pieChart, history = [];
-
-    function simulate() {
-        const p = {
-            cap: parseFloat(document.getElementById('startCap').value) || 0,
-            dailyBase: parseFloat(document.getElementById('dailyBase').value) || 0,
-            rate: (parseFloat(document.getElementById('monthlyRate').value) / 100) || 0,
-            extraMo: parseFloat(document.getElementById('extraMonthly').value) || 0,
-            extraYrs: parseFloat(document.getElementById('extraYears').value) || 0,
-            thresh: parseFloat(document.getElementById('threshold').value) || 0,
-            boost: parseFloat(document.getElementById('dailyBoost').value) || 0,
-            reinvest: (parseFloat(document.getElementById('reinvestPct').value) / 100) || 0,
-            isaTop: parseFloat(document.getElementById('isaTopUp').value) || 0,
-            inf: (parseFloat(document.getElementById('inflation').value) / 100) || 0
+        const formatMoney = (num) => {
+            return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(num);
         };
 
-        const dailyRate = Math.pow(1 + p.rate, 1 / 30.44) - 1;
-        const dailyInf = Math.pow(1 + p.inf, 1 / 365.25) - 1;
-
-        let balance = p.cap;
-        let totalOutlay = p.cap;
-        let totalProfit = 0;
-        let yearlyProfitAcc = 0;
-        let monthlyProfitAcc = 0;
-        
-        let currentDaily = p.dailyBase;
-        let boostTriggered = false;
-        let freedomDay = null;
-
-        const milestones = [100000, 250000, 500000, 1000000, 2500000];
-        const mReached = new Array(milestones.length).fill(null);
-        
-        history = [];
-        let chartLabels = [], chartBal = [], chartReal = [];
-
-        // Run 30 Years (10,950 Days)
-        for (let d = 1; d <= 10950; d++) {
-            // 1. Calculate base daily yield from the current balance
-            const dayProfit = balance * dailyRate;
-
-            // 2. Check Monthly Profit Threshold Trigger
-            if (d % 30 === 0 && !boostTriggered && monthlyProfitAcc > p.thresh) {
-                currentDaily = p.boost;
-                boostTriggered = true;
-            }
-
-            // 3. Formulate total external target inputs required for today
-            let requiredInjection = currentDaily;
-
-            if (d % 30 === 0 && d <= (p.extraYrs * 365)) {
-                requiredInjection += p.extraMo;
-            }
-
-            if (d % 365 === 95) {
-                requiredInjection += p.isaTop;
-            }
-
-            // 4. Self-Sustaining Bucket Check
-            if (dayProfit >= requiredInjection) {
-                if (!freedomDay) freedomDay = d;
-                // Sustained by profits entirely -> no added outlay, balance gets no extra out-of-pocket cash
-            } else {
-                // Out-of-pocket covers the deficit gap
-                let netDeficit = requiredInjection - dayProfit;
-                balance += netDeficit;
-                totalOutlay += netDeficit;
-            }
-
-            // 5. Apply Daily Yield Compounding
-            balance += dayProfit;
-            totalProfit += dayProfit;
-            yearlyProfitAcc += dayProfit;
-            monthlyProfitAcc += dayProfit;
-
-            // 6. Annual Profit Reinvestment Milestone Execution
-            if (d % 365 === 0) {
-                balance += (yearlyProfitAcc * p.reinvest);
-                yearlyProfitAcc = 0; 
-            }
-
-            // Reset monthly tracking bucket after the checks complete
-            if (d % 30 === 0) {
-                monthlyProfitAcc = 0;
-            }
-
-            // Milestone Checks
-            milestones.forEach((m, i) => {
-                if (mReached[i] === null && balance >= m) mReached[i] = (d / 365.25).toFixed(1);
-            });
-
-            // Data Capture Snapshots every month
-            if (d % 30 === 0) {
-                const real = balance / Math.pow(1 + dailyInf, d);
-                chartLabels.push(`Yr ${Math.floor(d / 365.25)}`);
-                chartBal.push(balance.toFixed(0));
-                chartReal.push(real.toFixed(0));
-                history.push({ day: d, balance, real, outlay: totalOutlay });
-            }
+        function handleIsaChange() {
+            const freq = document.getElementById('isaFreq').value;
+            const timingSelect = document.getElementById('isaTiming');
+            timingSelect.disabled = (freq === 'monthly');
+            calculate();
         }
 
-        render(balance, totalOutlay, totalProfit, freedomDay, mReached, chartLabels, chartBal, chartReal);
-    }
+        function calculate() {
+            // 1. Fetch Inputs
+            const P0 = parseFloat(document.getElementById('startCapital').value) || 0;
+            const regInjection = parseFloat(document.getElementById('injectionAmount').value) || 0;
+            const regFreq = document.getElementById('frequency').value;
+            
+            const isaAmount = parseFloat(document.getElementById('isaAmount').value) || 0;
+            const isaFreq = document.getElementById('isaFreq').value;
+            const isaTiming = document.getElementById('isaTiming').value;
 
-    function render(final, outlay, profit, freedom, milestones, labels, bData, rData) {
-        document.getElementById('statFinal').innerText = `£${Math.round(final).toLocaleString()}`;
-        document.getElementById('statOutlay').innerText = `£${Math.round(outlay).toLocaleString()}`;
-        document.getElementById('statFreedom').innerText = freedom ? `${(freedom / 365.25).toFixed(1)} Yrs` : "---";
+            const rate = (parseFloat(document.getElementById('harvestRate').value) || 0) / 100;
+            const reinvestPercent = (parseFloat(document.getElementById('reinvestPercent').value) || 0) / 100;
+            const timing = document.getElementById('timing').value;
+            const inflationRate = (parseFloat(document.getElementById('inflation').value) || 0) / 100;
+            const basis = document.getElementById('milestoneBasis').value;
 
-        const mBody = document.getElementById('milestoneBody');
-        mBody.innerHTML = `<tr><td><strong>Time to Reach</strong></td>${milestones.map(m => `<td>${m ? m + ' yrs' : '>30y'}</td>`).join('')}</tr>`;
+            const targets = [
+                parseFloat(document.getElementById('m1').value) || 0,
+                parseFloat(document.getElementById('m2').value) || 0,
+                parseFloat(document.getElementById('m3').value) || 0
+            ].sort((a, b) => a - b);
 
-        if (mainChart) mainChart.destroy();
-        mainChart = new Chart(document.getElementById('mainChart'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    { label: 'Nominal Balance', data: bData, borderColor: '#1e293b', fill: false, tension: 0.2, pointRadius: 0 },
-                    { label: 'Inflation Adjusted', data: rData, borderColor: '#f59e0b', borderDash: [5,5], pointRadius: 0 }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+            // 2. Standardize Base Monthly Injection
+            let baseMonthlyInjection = 0;
+            if (regFreq === 'daily') baseMonthlyInjection = regInjection * 21;
+            if (regFreq === 'weekly') baseMonthlyInjection = regInjection * 4.2;
+            if (regFreq === 'monthly') baseMonthlyInjection = regInjection;
 
-        if (pieChart) pieChart.destroy();
-        pieChart = new Chart(document.getElementById('pieChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Outlay', 'Net Profit'],
-                datasets: [{ data: [outlay, profit], backgroundColor: ['#3b82f6', '#10b981'] }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
+            // 3. Setup Loop Variables
+            let currentVal = P0;
+            let totalInjected = P0;
+            let totalWithdrawn = 0;
+            let totalReinvested = 0;
+            let monthCount = 0;
+            let results = [];
+            let targetIndex = 0;
+            const maxMonths = 1200; // 100 year hard stop
 
-    function downloadCSV() {
-        let csv = "Day,Balance,InflationAdjusted,TotalOutlay\n";
-        history.forEach(r => csv += `${r.day},${r.balance.toFixed(2)},${r.real.toFixed(2)},${r.outlay.toFixed(2)}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'Fortress_Data.csv'; a.click();
-    }
+            // 4. Run the Engine
+            while (targetIndex < targets.length && monthCount < maxMonths) {
+                monthCount++;
+                
+                // Determine ISA Injection for this specific month
+                let currentIsaInjection = 0;
+                if (isaFreq === 'monthly') {
+                    currentIsaInjection = isaAmount / 12;
+                } else if (isaFreq === 'yearly') {
+                    if (isaTiming === 'start' && monthCount % 12 === 1) currentIsaInjection = isaAmount;
+                    if (isaTiming === 'end' && monthCount % 12 === 0) currentIsaInjection = isaAmount;
+                }
 
-    simulate();
-</script>
+                const totalMonthlyInjection = baseMonthlyInjection + currentIsaInjection;
+                
+                // Calculate Profit
+                let baseForProfit = currentVal;
+                if (timing === 'immediate') {
+                    baseForProfit += totalMonthlyInjection;
+                }
+
+                const rawProfit = baseForProfit * rate;
+                const profitToReinvest = rawProfit * reinvestPercent;
+                const profitToWithdraw = rawProfit - profitToReinvest;
+
+                // Update Balances
+                currentVal += totalMonthlyInjection + profitToReinvest;
+                totalInjected += totalMonthlyInjection;
+                totalReinvested += profitToReinvest;
+                totalWithdrawn += profitToWithdraw;
+
+                // Calculate Real (Inflation Adjusted) Value
+                // P_real = P_nominal / (1 + r)^t
+                const realValue = currentVal / Math.pow(1 + inflationRate, monthCount / 12);
+                
+                // Check against milestone based on toggle
+                const checkValue = (basis === 'real') ? realValue : currentVal;
+
+                if (checkValue >= targets[targetIndex]) {
+                    const y = Math.floor(monthCount / 12);
+                    const m = monthCount % 12;
+                    results.push({
+                        target: targets[targetIndex],
+                        timeStr: `${y}y ${m}m`,
+                        injected: totalInjected,
+                        reinvested: totalReinvested,
+                        withdrawn: totalWithdrawn,
+                        nominalValue: currentVal,
+                        realValue: realValue
+                    });
+                    targetIndex++;
+                }
+            }
+
+            // 5. Update UI Table
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            results.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${formatMoney(res.target)}</strong></td>
+                    <td>${res.timeStr}</td>
+                    <td>${formatMoney(res.injected)}</td>
+                    <td class="text-success">${formatMoney(res.reinvested)}</td>
+                    <td class="text-warning">${formatMoney(res.withdrawn)}</td>
+                    <td>${formatMoney(res.realValue)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 6. Update Pie Chart
+            updateChart(results[results.length - 1]);
+        }
+
+        function updateChart(finalResult) {
+            const ctx = document.getElementById('splitChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            if (!finalResult) return;
+
+            const dataValues = [finalResult.injected, finalResult.reinvested];
+            const labels = ['Out of Pocket Injected', 'Reinvested Profit (Active)'];
+            const bgColors = ['#3b82f6', '#16a34a'];
+
+            // Only add the Withdrawn Cash slice if it exists
+            if (finalResult.withdrawn > 0) {
+                dataValues.push(finalResult.withdrawn);
+                labels.push('Withdrawn Cash');
+                bgColors.push('#f59e0b'); // Warning Yellow/Orange
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + formatMoney(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            handleIsaChange();
+        };
+    </script>
 </body>
 </html>
