@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fortress Strategy Simulator</title>
+    <title>Fortress Strategy Simulator v4.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #2563eb;
+            --primary-hover: #1d4ed8;
             --background: #f8fafc;
             --surface: #ffffff;
             --text-main: #0f172a;
@@ -47,12 +48,15 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
         }
+        .card:last-child { margin-bottom: 0; }
         h2 { margin-top: 0; font-size: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
         h3 { font-size: 1.1rem; color: var(--primary); margin-top: 1.5rem; margin-bottom: 0.75rem; }
         
         .form-group { margin-bottom: 1rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-triple { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0.5rem; }
         label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-muted); }
         
         input, select {
@@ -73,6 +77,26 @@
             cursor: not-allowed;
         }
         
+        .btn-refresh {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-refresh:hover { background-color: var(--primary-hover); }
+        .btn-refresh:active { transform: scale(0.98); }
+
         .milestones-group { display: flex; gap: 0.5rem; }
         
         table {
@@ -98,7 +122,7 @@
 </head>
 <body>
 
-    <h1 class="header-title">Fortress Strategy Simulator v4.0</h1>
+    <h1 class="header-title">Fortress Strategy Simulator v4.2</h1>
 
     <div class="container">
         <div class="card">
@@ -125,25 +149,32 @@
             </div>
 
             <h3>Extra Top-Up (ISA)</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Top-Up Amount (£)</label>
-                    <input type="number" id="isaAmount" value="0" oninput="calculate()">
-                </div>
-                <div class="form-group">
-                    <label>Frequency</label>
+            <div class="form-group">
+                <label>Top-Up Parameters</label>
+                <div class="form-triple">
+                    <input type="number" id="isaAmount" value="1600" placeholder="Amount" oninput="calculate()">
                     <select id="isaFreq" onchange="handleIsaChange()">
-                        <option value="yearly" selected>Yearly</option>
-                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="monthly" selected>Monthly</option>
+                    </select>
+                    <select id="isaTiming" onchange="calculate()">
+                        <option value="start" selected>Start</option>
+                        <option value="end">End</option>
                     </select>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Yearly Timing</label>
-                <select id="isaTiming" onchange="calculate()">
-                    <option value="start" selected>Start of Year (Month 1)</option>
-                    <option value="end">End of Year (Month 12)</option>
-                </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Top-Up Duration Value</label>
+                    <input type="number" id="isaDurationVal" value="5" min="1" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Duration Unit</label>
+                    <select id="isaDurationUnit" onchange="calculate()">
+                        <option value="years" selected>Years</option>
+                        <option value="months">Months</option>
+                    </select>
+                </div>
             </div>
 
             <h3>Market & Strategy</h3>
@@ -187,6 +218,8 @@
                     <input type="number" id="m3" value="1000000" oninput="calculate()">
                 </div>
             </div>
+
+            <button class="btn-refresh" onclick="calculate()">🔄 Run / Refresh Simulation</button>
         </div>
 
         <div class="card">
@@ -204,7 +237,7 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
 
@@ -238,6 +271,8 @@
             const isaAmount = parseFloat(document.getElementById('isaAmount').value) || 0;
             const isaFreq = document.getElementById('isaFreq').value;
             const isaTiming = document.getElementById('isaTiming').value;
+            const isaDurationVal = parseFloat(document.getElementById('isaDurationVal').value) || 0;
+            const isaDurationUnit = document.getElementById('isaDurationUnit').value;
 
             const rate = (parseFloat(document.getElementById('harvestRate').value) || 0) / 100;
             const reinvestPercent = (parseFloat(document.getElementById('reinvestPercent').value) || 0) / 100;
@@ -250,6 +285,14 @@
                 parseFloat(document.getElementById('m2').value) || 0,
                 parseFloat(document.getElementById('m3').value) || 0
             ].sort((a, b) => a - b);
+
+            // Calculate cutoff timeline accurately
+            let maxIsaMonths = 0;
+            if (isaDurationUnit === 'years') {
+                maxIsaMonths = isaDurationVal * 12;
+            } else {
+                maxIsaMonths = isaDurationVal;
+            }
 
             // 2. Standardize Base Monthly Injection
             let baseMonthlyInjection = 0;
@@ -265,24 +308,25 @@
             let monthCount = 0;
             let results = [];
             let targetIndex = 0;
-            const maxMonths = 1200; // 100 year hard stop
+            const maxMonths = 1200; // 100 year stop point
 
-            // 4. Run the Engine
+            // 4. Run calculation logic engine
             while (targetIndex < targets.length && monthCount < maxMonths) {
                 monthCount++;
                 
-                // Determine ISA Injection for this specific month
                 let currentIsaInjection = 0;
-                if (isaFreq === 'monthly') {
-                    currentIsaInjection = isaAmount / 12;
-                } else if (isaFreq === 'yearly') {
-                    if (isaTiming === 'start' && monthCount % 12 === 1) currentIsaInjection = isaAmount;
-                    if (isaTiming === 'end' && monthCount % 12 === 0) currentIsaInjection = isaAmount;
+                if (monthCount <= maxIsaMonths) {
+                    if (isaFreq === 'monthly') {
+                        currentIsaInjection = isaAmount;
+                    } else if (isaFreq === 'yearly') {
+                        if (isaTiming === 'start' && monthCount % 12 === 1) currentIsaInjection = isaAmount;
+                        if (isaTiming === 'end' && monthCount % 12 === 0) currentIsaInjection = isaAmount;
+                    }
                 }
 
                 const totalMonthlyInjection = baseMonthlyInjection + currentIsaInjection;
                 
-                // Calculate Profit
+                // Calculate Profit compounding steps cleanly
                 let baseForProfit = currentVal;
                 if (timing === 'immediate') {
                     baseForProfit += totalMonthlyInjection;
@@ -298,14 +342,12 @@
                 totalReinvested += profitToReinvest;
                 totalWithdrawn += profitToWithdraw;
 
-                // Calculate Real (Inflation Adjusted) Value
-                // P_real = P_nominal / (1 + r)^t
+                // Inflation Adjustment Calculation Layer
                 const realValue = currentVal / Math.pow(1 + inflationRate, monthCount / 12);
-                
-                // Check against milestone based on toggle
                 const checkValue = (basis === 'real') ? realValue : currentVal;
 
-                if (checkValue >= targets[targetIndex]) {
+                // Multi-milestone crossing checker loop protection
+                while (targetIndex < targets.length && checkValue >= targets[targetIndex]) {
                     const y = Math.floor(monthCount / 12);
                     const m = monthCount % 12;
                     results.push({
@@ -321,7 +363,7 @@
                 }
             }
 
-            // 5. Update UI Table
+            // 5. Build Layout Data Tables
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             results.forEach(res => {
@@ -337,7 +379,7 @@
                 tbody.appendChild(tr);
             });
 
-            // 6. Update Pie Chart
+            // 6. Draw Split Donut Visuals
             updateChart(results[results.length - 1]);
         }
 
@@ -350,11 +392,10 @@
             const labels = ['Out of Pocket Injected', 'Reinvested Profit (Active)'];
             const bgColors = ['#3b82f6', '#16a34a'];
 
-            // Only add the Withdrawn Cash slice if it exists
             if (finalResult.withdrawn > 0) {
                 dataValues.push(finalResult.withdrawn);
                 labels.push('Withdrawn Cash');
-                bgColors.push('#f59e0b'); // Warning Yellow/Orange
+                bgColors.push('#f59e0b');
             }
 
             myChart = new Chart(ctx, {
@@ -385,7 +426,6 @@
             });
         }
 
-        // Initialize on load
         window.onload = function() {
             handleIsaChange();
         };
